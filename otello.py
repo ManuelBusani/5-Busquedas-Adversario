@@ -24,6 +24,11 @@ Esta tupla va a guardar el estado de cada casilla
 
 Las negras empiezan primero en Otello.
 
+Las acciones van a ser representadas como una tupla de números
+`(i,j) que representa la casilla en la que se pone una ficha,
+donde `i es el índice de la fila y `j es el índice de la
+columna.
+
 """
 
 from juegos_simplificado import ModeloJuegoZT2
@@ -51,8 +56,44 @@ class Otello(ModeloJuegoZT2):
         		1)
 
     def jugadas_legales(self, s, j):
-        return 'todo';
-    
+        acciones = ()
+        for fila in range(8):
+            for columna in range(8):
+                accion = (fila, columna)
+                if self.es_legal(accion, s, j):
+                    acciones += (accion,)
+
+        return acciones;
+
+    def es_legal(self, a, s, jugador):
+
+        for inc_i in (-1,0,1):
+            for inc_j in (-1,0,1):
+
+                i = a[0] + inc_i
+                j = a[1] + inc_j 
+
+                if(inc_i == 0 and inc_j == 0):
+                    continue
+
+                if i not in range(8) or j not in range(8):
+                    continue
+
+                if s[i * 8 + j] != -jugador:
+                    continue
+
+                while(i in range(8) and j in range(8)):
+                    if s[i * 8 + j] == 0:
+                        return True
+
+                    if s[i * 8 + j] == jugador:
+                        break
+
+                    i += inc_i
+                    j += inc_j
+
+        return False
+
     def transicion(self, s, a, j):
         return 'todo';
 
@@ -80,9 +121,11 @@ def crear_jugador_artificial():
 def jugador_manual(juego, s, j):
 	return 'todo'
 
+def main():
+    juego = Otello()
+    s0 = juego.inicializa()
+    a = juego.jugadas_legales(s0,1)
+    print(a)
 
 if __name__ == '__main__':
-	juego = Otello()
-	s0 = juego.inicializa()
-	print(s0)
-	print(len(s0))
+    main()
