@@ -48,8 +48,8 @@ class Otello(ModeloJuegoZT2):
         return ((0, 0, 0, 0, 0, 0, 0, 0,
         		 0, 0, 0, 0, 0, 0, 0, 0,
         		 0, 0, 0, 0, 0, 0, 0, 0,
-        		 0, 0, 0, 1,-1, 0, 0, 0,
         		 0, 0, 0,-1, 1, 0, 0, 0,
+        		 0, 0, 0, 1,-1, 0, 0, 0,
         		 0, 0, 0, 0, 0, 0, 0, 0,
         		 0, 0, 0, 0, 0, 0, 0, 0,
         		 0, 0, 0, 0, 0, 0, 0, 0,),
@@ -62,49 +62,57 @@ class Otello(ModeloJuegoZT2):
                 accion = (fila, columna)
                 if self.es_legal(accion, s, j):
                     acciones += (accion,)
-
         return acciones;
 
-    def es_legal(self, a, s, jugador):
+    def es_legal(self, a, s, jugador):        
+        if s[a[0] * 8 + a[1]] != 0:
+            return False
 
         for inc_i in (-1,0,1):
             for inc_j in (-1,0,1):
-
                 i = a[0] + inc_i
-                j = a[1] + inc_j 
+                j = a[1] + inc_j
 
-                if(inc_i == 0 and inc_j == 0):
-                    continue
+                if((inc_i == inc_j == 0) or
+                   (i not in range(8) or j not in range(8)) or
+                   (s[i * 8 + j] != -jugador)):
+                        continue
 
-                if i not in range(8) or j not in range(8):
-                    continue
-
-                if s[i * 8 + j] != -jugador:
-                    continue
-
-                while(i in range(8) and j in range(8)):
-                    if s[i * 8 + j] == 0:
-                        return True
-
+                i += inc_i
+                j += inc_j
+                # while(i in range(8) and j in range(8)):
+                while(0 <= i, j < 8) :
                     if s[i * 8 + j] == jugador:
+                        return True
+                    if s[i * 8 + j] == 0:
                         break
-
                     i += inc_i
                     j += inc_j
 
         return False
 
     def transicion(self, s, a, j):
-        return 'todo';
+        return 'todo'
 
     def ganancia(self, s):
-        return 'todo';
+        return 'todo'
 
     def terminal(self, s):
-        return 'todo';
+        return self.ganancia(s) != 0
 
 def pprint(s):
-		print('todo')
+    print(' |', end='')
+    for i in 'abcdefgh':
+        print(i + '|', end='')
+    print('')
+
+    for i in range(8):
+        print('-+'*9)
+
+        print(i+1, end='|')
+        for j in range(8):
+            print(' NB'[s[i*8 + j]],end='|')
+        print('')
 
 # función de evaluación del estado para estimar utilidad
 def evaluar(s):
@@ -119,13 +127,37 @@ def crear_jugador_artificial():
 	return 'todo'
 
 def jugador_manual(juego, s, j):
-	return 'todo'
+    acciones = juego.jugadas_legales(s,j)
+    accion = 0
 
-def main():
+    while accion not in acciones:
+        print('\nJugador ' + ('', 'negro', 'blanco')[j])
+        for a in acciones:
+            print('abcdefgh'[a[1]] + str(a[0]+1), end=' ')
+        print('Introduzca acción:')
+        entrada = input()
+        accion = (int(entrada[1]) - 1, 'abcdefgh'.find(entrada[0]))
+
+    print(accion, end='\n\n')
+    return accion
+
+# por cambiar cosas
+def simulacion():
     juego = Otello()
-    s0 = juego.inicializa()
-    a = juego.jugadas_legales(s0,1)
-    print(a)
+    estado, jugador = juego.inicializa()
+
+    entrada = 1
+
+    while True:
+        pprint(estado)
+
+        accion = jugador_manual(juego,estado,jugador)
+
+        estado = list(estado)
+        estado[accion[0]*8 + accion[1]] = jugador
+        estado = tuple(estado)
+
+        jugador = -jugador
 
 if __name__ == '__main__':
-    main()
+    simulacion()
