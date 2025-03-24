@@ -2,8 +2,8 @@
 Juego del Otello
 
 El estado se va a representar como una tupla de 64 elementos 
-pensandolo como una matriz de 8x8, donde `estado[8*i + j] 
-es la casilla en la fila `i y la columna `j.
+pensandolo como una matriz de 8x8, donde `estado[8*i + j]`
+es la casilla en la fila `i` y la columna `j`.
 
 0  1  2  	3  4  	5  6  7
 8  9  10 	11 12 	13 14 15
@@ -25,9 +25,15 @@ Esta tupla va a guardar el estado de cada casilla
 Las negras empiezan primero en Otello.
 
 Las acciones van a ser representadas como una tupla de números
-`(i,j) que representa la casilla en la que se pone una ficha,
-donde `i es el índice de la fila y `j es el índice de la
+`(i,j)` que representa la casilla en la que se pone una ficha,
+donde `i` es el índice de la fila y `j` es el índice de la
 columna.
+
+En Otello, cuando no hay acciones legales para un jugador
+pero si para el otro se omite el turno.
+
+En dicho caso consideraré omitir turno como una acción legal
+y la representaré como `None`.
 
 """
 
@@ -38,13 +44,6 @@ from minimax import minimax_iterativo
 
 class Otello(ModeloJuegoZT2):
     def inicializa(self):
-        # estado = ([0 for _ in range(9*3)])
-        # estado += (1,-1)
-        # estado += ([0 for _ in range(6)])
-        # estado += (-1,1)
-        # estado += ([0 for _ in range(9*3)])
-        # return (estado, 1)
-
         return ((0, 0, 0, 0, 0, 0, 0, 0,
         		 0, 0, 0, 0, 0, 0, 0, 0,
         		 0, 0, 0, 0, 0, 0, 0, 0,
@@ -62,9 +61,24 @@ class Otello(ModeloJuegoZT2):
                 accion = (fila, columna)
                 if self.es_legal(accion, s, j):
                     acciones += (accion,)
-        return acciones;
 
-    def es_legal(self, a, s, jugador):        
+        if acciones != ():
+            return acciones
+
+        for fila in range(8):
+            for columna in range(8):
+                accion = (fila, columna)
+                if self.es_legal(accion, s, -j):
+                    acciones += (accion,)
+
+        # caso en el que es estado terminal
+        if acciones == ():
+            return ()
+
+        # caso en el que `j` no tiene acciones legales pero `-j` si,
+        return (None,) 
+
+    def es_legal(self, a, s, jugador):
         if s[a[0] * 8 + a[1]] != 0:
             return False
 
@@ -74,26 +88,28 @@ class Otello(ModeloJuegoZT2):
                 j = a[1] + inc_j
 
                 if((inc_i == inc_j == 0) or
-                   (i not in range(8) or j not in range(8)) or
+                   (not (0 <= i < 8)) or 
+                   (not (0 <= j < 8)) or
                    (s[i * 8 + j] != -jugador)):
                         continue
 
                 i += inc_i
                 j += inc_j
-                # while(i in range(8) and j in range(8)):
-                while(0 <= i, j < 8):
+
+                while (0 <= i < 8) and (0 <= j < 8): 
                     if s[i * 8 + j] == jugador:
                         return True
                     if s[i * 8 + j] == 0:
                         break
                     i += inc_i
                     j += inc_j
-
         return False
 
     def transicion(self, s, a, jugador):
-        estado = list(s)
+        if a == None:
+            return s
 
+        estado = list(s)
         for inc_i in (-1,0,1):
             for inc_j in (-1,0,1):
                 if inc_i == inc_j == 0:
@@ -106,7 +122,8 @@ class Otello(ModeloJuegoZT2):
                     i += inc_i
                     j += inc_j
 
-                    if ((i not in range(8) or j not in range(8)) or 
+                    if ((not (0 <= i < 8)) or
+                        (not (0 <= j < 8)) or
                         (estado[i * 8 + j] == 0)):
                             contador = 0
                             break
@@ -116,18 +133,20 @@ class Otello(ModeloJuegoZT2):
 
                     contador += 1
 
-
                 while contador > 0:
                     i -= inc_i
                     j -= inc_j
-                    contador -= contador
+                    contador -= 1
                     estado[i * 8 + j] = jugador
 
         estado[a[0]*8 + a[1]] = jugador
-
         return tuple(estado)
+
     def ganancia(self, s):
-        return 'todo'
+        suma_piezas = sum(s)
+        return (1 if suma_piezas > 0 else
+                0 if suma_piezas == 0 else -1)
+
 
     def terminal(self, s):
         return (self.jugadas_legales(s,1) == () ==
@@ -157,38 +176,56 @@ def ordenar(jugadas, jugador):
 	return 'todo'
 
 def crear_jugador_artificial():
-	return 'todo'
+
+    def jugador_primera_accion(juego, estado, jugador):
+        acciones = juego.jugadas_legales(estado,jugador)
+        return (acciones[0] if acciones != () else None)
+
+    return jugador_primera_accion
 
 def jugador_manual(juego, s, j):
     acciones = juego.jugadas_legales(s,j)
     accion = 0
 
-    while accion not in acciones:
+    while accion not in acciones and acciones != (None,):
         print('\nJugador ' + ('', 'negro', 'blanco')[j])
         for a in acciones:
             print('abcdefgh'[a[1]] + str(a[0]+1), end=' ')
         print('Introduzca acción:')
         entrada = input()
+
         accion = (int(entrada[1]) - 1, 'abcdefgh'.find(entrada[0]))
+
+    if acciones == (None,):
+        print('No hay acciones legales para las piezas ',end='')
+        print(('', 'negras', 'blancas')[j],end='\n\n')
+        return None
 
     print(accion, end='\n\n')
     return accion
 
-# por cambiar cosas
-def simulacion():
+# `jugador1 son las piezas negras 
+# `jugador2 son las piezas blancas
+def simulacion(jugador1, jugador2):
     juego = Otello()
     estado, jugador = juego.inicializa()
 
-    entrada = 1
-
     while not juego.terminal(estado):
         pprint(estado)
+        print('')
 
-        accion = jugador_manual(juego,estado,jugador)
+        accion = (jugador1 if jugador == 1 else jugador2
+                 )(juego, estado, jugador)
 
-        estado = juego.transicion(estado,accion,jugador)
+        estado = juego.transicion(estado, accion, jugador)
 
         jugador = -jugador
 
+    print(juego.ganancia(estado))
+
+def main():
+    j = crear_jugador_artificial()
+    simulacion(j, j)
+
 if __name__ == '__main__':
-    simulacion()
+    main()
