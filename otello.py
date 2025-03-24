@@ -81,7 +81,7 @@ class Otello(ModeloJuegoZT2):
                 i += inc_i
                 j += inc_j
                 # while(i in range(8) and j in range(8)):
-                while(0 <= i, j < 8) :
+                while(0 <= i, j < 8):
                     if s[i * 8 + j] == jugador:
                         return True
                     if s[i * 8 + j] == 0:
@@ -91,14 +91,47 @@ class Otello(ModeloJuegoZT2):
 
         return False
 
-    def transicion(self, s, a, j):
-        return 'todo'
+    def transicion(self, s, a, jugador):
+        estado = list(s)
 
+        for inc_i in (-1,0,1):
+            for inc_j in (-1,0,1):
+                if inc_i == inc_j == 0:
+                    continue
+
+                i, j = a
+                contador = 0
+
+                while(True):
+                    i += inc_i
+                    j += inc_j
+
+                    if ((i not in range(8) or j not in range(8)) or 
+                        (estado[i * 8 + j] == 0)):
+                            contador = 0
+                            break
+
+                    if estado[i * 8 + j] == jugador:
+                        break
+
+                    contador += 1
+
+
+                while contador > 0:
+                    i -= inc_i
+                    j -= inc_j
+                    contador -= contador
+                    estado[i * 8 + j] = jugador
+
+        estado[a[0]*8 + a[1]] = jugador
+
+        return tuple(estado)
     def ganancia(self, s):
         return 'todo'
 
     def terminal(self, s):
-        return self.ganancia(s) != 0
+        return (self.jugadas_legales(s,1) == () ==
+                self.jugadas_legales(s,-1))
 
 def pprint(s):
     print(' |', end='')
@@ -148,14 +181,12 @@ def simulacion():
 
     entrada = 1
 
-    while True:
+    while not juego.terminal(estado):
         pprint(estado)
 
         accion = jugador_manual(juego,estado,jugador)
 
-        estado = list(estado)
-        estado[accion[0]*8 + accion[1]] = jugador
-        estado = tuple(estado)
+        estado = juego.transicion(estado,accion,jugador)
 
         jugador = -jugador
 
