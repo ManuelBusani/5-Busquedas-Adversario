@@ -39,6 +39,8 @@ y la representaré como `None`.
 
 from juegos_simplificado import ModeloJuegoZT2
 from juegos_simplificado import juega_dos_jugadores
+from random import choice
+from re import match
 from minimax import jugador_negamax
 from minimax import minimax_iterativo
 
@@ -54,56 +56,42 @@ class Otello(ModeloJuegoZT2):
         		 0, 0, 0, 0, 0, 0, 0, 0,),
         		1)
 
-    def jugadas_legales(self, s, j):
+    def jugadas_legales(self, s, jugador):
+        def es_legal(a):
+            if s[a[0] * 8 + a[1]] != 0:
+                return False
+
+            for inc_i in (-1,0,1):
+                for inc_j in (-1,0,1):
+                    i = a[0] + inc_i
+                    j = a[1] + inc_j
+
+                    if((inc_i == inc_j == 0) or
+                       (not (0 <= i < 8)) or 
+                       (not (0 <= j < 8)) or
+                       (s[i * 8 + j] != -jugador)):
+                            continue
+
+                    i += inc_i
+                    j += inc_j
+
+                    while (0 <= i < 8) and (0 <= j < 8): 
+                        if s[i * 8 + j] == jugador:
+                            return True
+                        if s[i * 8 + j] == 0:
+                            break
+                        i += inc_i
+                        j += inc_j
+            return False
+
         acciones = ()
         for fila in range(8):
             for columna in range(8):
                 accion = (fila, columna)
-                if self.es_legal(accion, s, j):
+                if es_legal(accion):
                     acciones += (accion,)
 
-        if acciones != ():
-            return acciones
-
-        for fila in range(8):
-            for columna in range(8):
-                accion = (fila, columna)
-                if self.es_legal(accion, s, -j):
-                    acciones += (accion,)
-
-        # caso en el que es estado terminal
-        if acciones == ():
-            return ()
-
-        # caso en el que `j` no tiene acciones legales pero `-j` si,
-        return (None,) 
-
-    def es_legal(self, a, s, jugador):
-        if s[a[0] * 8 + a[1]] != 0:
-            return False
-
-        for inc_i in (-1,0,1):
-            for inc_j in (-1,0,1):
-                i = a[0] + inc_i
-                j = a[1] + inc_j
-
-                if((inc_i == inc_j == 0) or
-                   (not (0 <= i < 8)) or 
-                   (not (0 <= j < 8)) or
-                   (s[i * 8 + j] != -jugador)):
-                        continue
-
-                i += inc_i
-                j += inc_j
-
-                while (0 <= i < 8) and (0 <= j < 8): 
-                    if s[i * 8 + j] == jugador:
-                        return True
-                    if s[i * 8 + j] == 0:
-                        break
-                    i += inc_i
-                    j += inc_j
-        return False
+        return (acciones if acciones else (None,))
 
     def transicion(self, s, a, jugador):
         if a == None:
@@ -147,85 +135,120 @@ class Otello(ModeloJuegoZT2):
         return (1 if suma_piezas > 0 else
                 0 if suma_piezas == 0 else -1)
 
-
     def terminal(self, s):
-        return (self.jugadas_legales(s,1) == () ==
+        return (self.jugadas_legales(s,1) == (None,) ==
                 self.jugadas_legales(s,-1))
 
-def pprint(s):
+def evaluar(s):
+    salida = 0
+    for i in range(64):
+        salida += s[i]
+
+    salida += 9*(s[0] + s[7] + s[56] + s[63])
+
+    return salida/100 # 64 + 4*9
+
+
+    return 0
+
+def ordenar(jugadas, jugador):
+    def casillas_peligrosas(a):
+        # centro
+
+        if a == None:
+            return 0
+
+        if (a[0]-2) in range(4) and (a[1]-2) in range(4):
+            return 1
+
+        # cuadros peligrosos
+        if a in ((0,1),(1,0),(0,6),(6,0),
+                 (1,6),(6,1),(1,7),(7,1),
+                 (6,7),(7,6),(1,1),(6,6)):
+            return 3
+
+        # esquinas
+        if ((a[0] == 0 or a[0] == 7) and (a[1] == 0 or a[1] == 7)):
+            return 0
+
+        return 2
+    return sorted(jugadas, key=casillas_peligrosas)
+
+# se muestra con un `*` las casillas indicadas por
+# `acciones`, esto se usa para mostrar las acciones legales
+def pprint_estado(s,acciones=()):
+    acciones = list(acciones)
     print(' |', end='')
     for i in 'abcdefgh':
         print(i + '|', end='')
     print('')
-
     for i in range(8):
         print('-+'*9)
 
         print(i+1, end='|')
         for j in range(8):
-            print(' NB'[s[i*8 + j]],end='|')
+            if (acciones and (acciones[0] != None) and
+               (acciones[0] == (i, j) )):
+                print('*',end='|')
+                acciones.pop(0)
+            else:
+                print(' NB'[s[i * 8 + j]],end='|')
+
         print('')
 
-# función de evaluación del estado para estimar utilidad
-def evaluar(s):
-	return 'todo'
+def pprint_accion(accion, fin='\n'):
+    print('abcdefgh'[accion[1]] + str(accion[0]+1),end=fin)
 
-# heurística para ordenar jugadas.
-# regresa las jugadas de mejor a peor.
-def ordenar(jugadas, jugador):
-	return 'todo'
+def crear_jugador_artificial(es_iterativo, num):
 
-def crear_jugador_artificial():
-
-    def jugador_primera_accion(juego, estado, jugador):
+    def jugador(juego, estado, jugador):
         acciones = juego.jugadas_legales(estado,jugador)
-        return (acciones[0] if acciones != () else None)
+        pprint_estado(estado,acciones)
 
-    return jugador_primera_accion
+        accion = None
+        if es_iterativo:
+            accion = minimax_iterativo(
+                juego, estado, jugador,
+                ordena=ordenar, evalua=evaluar, tiempo=num)
+        else:
+            accion = jugador_negamax(
+                juego, estado, jugador,
+                ordena=ordenar, evalua=evaluar, d=num)
 
-def jugador_manual(juego, s, j):
-    acciones = juego.jugadas_legales(s,j)
-    accion = 0
+        if accion == None:
+            print('\nNo hay acciones legales para las piezas ',end='')
+            print(('', 'negras', 'blancas')[jugador],end='\n\n')
+        else:
+            print("\nSe jugó ", end='')
+            pprint_accion(accion,'\n\n')
 
-    while accion not in acciones and acciones != (None,):
-        print('\nJugador ' + ('', 'negro', 'blanco')[j])
-        for a in acciones:
-            print('abcdefgh'[a[1]] + str(a[0]+1), end=' ')
-        print('Introduzca acción:')
+        return accion
+
+    return jugador
+
+def jugador_manual(juego, estado, jugador):
+    acciones = juego.jugadas_legales(estado,jugador)
+    pprint_estado(estado, acciones)
+    accion = None
+
+    while accion not in acciones:
+        print('\nElige acción ([a-h][1-8]):')
         entrada = input()
+        if match("[a-h][1-8]\\Z", entrada):
+            accion = (int(entrada[1]) - 1, 'abcdefgh'.find(entrada[0]))
 
-        accion = (int(entrada[1]) - 1, 'abcdefgh'.find(entrada[0]))
-
-    if acciones == (None,):
+    if accion == None:
         print('No hay acciones legales para las piezas ',end='')
-        print(('', 'negras', 'blancas')[j],end='\n\n')
-        return None
+        print(('', 'negras', 'blancas')[jugador],end='\n\n')
 
-    print(accion, end='\n\n')
     return accion
 
-# `jugador1 son las piezas negras 
-# `jugador2 son las piezas blancas
-def simulacion(jugador1, jugador2):
-    juego = Otello()
-    estado, jugador = juego.inicializa()
-
-    while not juego.terminal(estado):
-        pprint(estado)
-        print('')
-
-        accion = (jugador1 if jugador == 1 else jugador2
-                 )(juego, estado, jugador)
-
-        estado = juego.transicion(estado, accion, jugador)
-
-        jugador = -jugador
-
-    print(juego.ganancia(estado))
-
 def main():
-    j = crear_jugador_artificial()
-    simulacion(j, j)
+    # iterativo
+    j = crear_jugador_artificial(True,3)
+    ganancia, estado = juega_dos_jugadores(Otello(), j, j)
+    pprint_estado(estado)
+    print('\nGanaron las piezas ' + ('negras' if ganancia == 1 else 'blancas') )
 
 if __name__ == '__main__':
     main()
