@@ -89,6 +89,9 @@ def pprint_conecta4(s):
     print('|'.join(a[42:49]))
     
 def jugador_manual_conecta4(juego, s, j):
+    #######
+    print(evalua_posibles_4con(s))
+    #######
     pprint_conecta4(s)
     print("Jugador", " XO"[j])
     jugadas = list(juego.jugadas_legales(s, j))
@@ -103,6 +106,60 @@ def ordena_centro(jugadas, jugador):
     Ordena las jugadas de acuerdo a la distancia al centro
     """
     return sorted(jugadas, key=lambda x: abs(x - 4))
+
+def evalua_posibles_4con(s):
+    """
+    https://stackoverflow.com/questions/10985000/how-should-i-design-a-good-evaluation-function-for-connect-4
+
+    Número de posibles alineaciones de 4 fichas,
+    posibles conexiones = 4*6 + 3*7 + 2(4*3)
+
+     0  1  2  3  4  5  6
+     7  8  9 10 11 12 13
+    14 15 16 17 18 19 20
+    21 22 23 24 25 26 27
+    28 29 30 31 32 33 34
+    35 36 37 38 39 40 41
+
+    """
+    conexiones = 0
+    # conexiones horizontales
+    for i in range(6):
+        jug1, jug2 = 0, 0
+        for j in range(7):
+            actual = s[i*7 + j]
+            if actual == 1:
+                jug1 += 1
+                jug2 = 0
+            elif actual == -1:
+                jug2 += 1
+                jug1 = 0
+            else:
+                jug1 += 1
+                jug2 += 1
+            if jug1 >= 4:
+                conexiones += 1
+            if jug2 >= 4:
+                conexiones -= 1
+    # conexiones verticales
+    for j in range(7):
+        jug1, jug2 = 0, 0
+        for i in range(6):
+            actual = s[i*7 + j]
+            if actual == 1:
+                jug1 += 1
+                jug2 = 0
+            elif actual == -1:
+                jug2 += 1
+                jug1 = 0
+            else:
+                jug1 += 1
+                jug2 += 1
+            if jug1 >= 4:
+                conexiones += 1
+            if jug2 >= 4:
+                conexiones -= 1
+    return conexiones
 
 def evalua_3con(s):
     """
@@ -187,5 +244,3 @@ if __name__ == '__main__':
         print("Gana el jugador " + " XO"[g])
     else:
         print("Empate")
-    
-    
