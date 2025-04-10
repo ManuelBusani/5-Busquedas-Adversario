@@ -89,9 +89,6 @@ def pprint_conecta4(s):
     print('|'.join(a[42:49]))
     
 def jugador_manual_conecta4(juego, s, j):
-    #######
-    print(evalua_posibles_4con(s))
-    #######
     pprint_conecta4(s)
     print("Jugador", " XO"[j])
     jugadas = list(juego.jugadas_legales(s, j))
@@ -100,6 +97,14 @@ def jugador_manual_conecta4(juego, s, j):
     while jugada not in jugadas:
         jugada = int(input("Jugada: "))
     return jugada
+
+# def ordena(jugadas, jugador):
+#     """
+#     Ordena las jugadas de acuerdo a 
+#     la función de evaluación
+#     """
+#     return 'todo'
+
 
 def ordena_centro(jugadas, jugador):
     """
@@ -111,16 +116,8 @@ def evalua_posibles_4con(s):
     """
     https://stackoverflow.com/questions/10985000/how-should-i-design-a-good-evaluation-function-for-connect-4
 
-    Número de posibles alineaciones de 4 fichas,
+    Número de posibles conexiones de 4 fichas,
     posibles conexiones = 4*6 + 3*7 + 2(4*3)
-
-     0  1  2  3  4  5  6
-     7  8  9 10 11 12 13
-    14 15 16 17 18 19 20
-    21 22 23 24 25 26 27
-    28 29 30 31 32 33 34
-    35 36 37 38 39 40 41
-
     """
     conexiones = 0
     # conexiones horizontales
@@ -128,15 +125,8 @@ def evalua_posibles_4con(s):
         jug1, jug2 = 0, 0
         for j in range(7):
             actual = s[i*7 + j]
-            if actual == 1:
-                jug1 += 1
-                jug2 = 0
-            elif actual == -1:
-                jug2 += 1
-                jug1 = 0
-            else:
-                jug1 += 1
-                jug2 += 1
+            jug1 = (jug1 + 1 if actual != -1 else 0)
+            jug2 = (jug2 + 1 if actual != 1 else 0)
             if jug1 >= 4:
                 conexiones += 1
             if jug2 >= 4:
@@ -146,20 +136,44 @@ def evalua_posibles_4con(s):
         jug1, jug2 = 0, 0
         for i in range(6):
             actual = s[i*7 + j]
-            if actual == 1:
-                jug1 += 1
-                jug2 = 0
-            elif actual == -1:
-                jug2 += 1
-                jug1 = 0
-            else:
-                jug1 += 1
-                jug2 += 1
+            jug1 = (jug1 + 1 if actual != -1 else 0)
+            jug2 = (jug2 + 1 if actual != 1 else 0)
             if jug1 >= 4:
                 conexiones += 1
             if jug2 >= 4:
                 conexiones -= 1
-    return conexiones
+
+    # conexiones diagonales
+    for x in range(6):
+        # hacia derecha abajo
+        # valor i: 14, 7, 0, 1, 2, 3
+        # rango j: 4,  5, 6, 6, 5, 4
+        jug1, jug2 = 0, 0
+        i = (x - 2 if x > 1 else 7*(2-x))
+        for j in range(6 - abs(x - 2)):
+            actual = s[i + j*8]
+            jug1 = (jug1 + 1 if actual != -1 else 0)
+            jug2 = (jug2 + 1 if actual != 1 else 0)
+            if jug1 >= 4:
+                conexiones += 1
+            if jug2 >= 4:
+                conexiones -= 1
+
+        # hacia izquierda abajo
+        # valor i: 3, 4, 5, 6, 13, 20
+        # rango j: 4, 5, 6, 6,  5, 4
+        jug1, jug2 = 0, 0
+        i = (x + 3 if x < 4 else 7*x-22)
+        for j in range(6 - abs(x - 2)):
+            actual = s[i + j*6]
+            jug1 = (jug1 + 1 if actual != -1 else 0)
+            jug2 = (jug2 + 1 if actual != 1 else 0)
+            if jug1 >= 4:
+                conexiones += 1
+            if jug2 >= 4:
+                conexiones -= 1
+
+    return conexiones / 69
 
 def evalua_3con(s):
     """
@@ -236,7 +250,7 @@ if __name__ == '__main__':
             jugs.append(lambda juego, s, j: minimax_iterativo(
                 juego, s, j, ordena=ordena_centro, evalua=evalua_3con, tiempo=t)
             )
-        
+
     g, s_final = juega_dos_jugadores(modelo, jugs[0], jugs[1])
     print("\nSE ACABO EL JUEGO\n")
     pprint_conecta4(s_final)
